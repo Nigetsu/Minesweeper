@@ -11,18 +11,18 @@ class Minesweeper:
         self.end = False
         self.__first_cell = True
 
-        # Заполняем минами поле
+        self._generate_mine_on_board()
+        self._calculate_mines()
+
+    def _generate_mine_on_board(self):
         mine_located = 0
-        while mine_located < mine_count:
-            x = randint(0, m - 1)
-            y = randint(0, n - 1)
+        while mine_located < self.mine_count:
+            x = randint(0, self.__m - 1)
+            y = randint(0, self.__n - 1)
             if self.board[y][x] != -1:
                 self.board[y][x] = -1
                 mine_located += 1
 
-        self._calculate_mines()
-
-    # Подсчет мин вокруг
     def _calculate_mines(self):
         for y in range(self.__n):
             for x in range(self.__m):
@@ -36,7 +36,6 @@ class Minesweeper:
                             count += 1
                 self.board[y][x] = count
 
-    # Перемещаем мину
     def _move_mine(self, x: int, y: int):
         self.board[y][x] = 0
 
