@@ -1,5 +1,7 @@
+import re
 from random import randint
 from typing import List, Tuple
+from enum import Enum, auto
 
 
 class Cell:
@@ -102,6 +104,12 @@ class GameField:
         return True
 
 
+class CommandType(Enum):
+    OPEN = 'open'
+    EXIT = 'exit'
+    SHOW = 'show'
+
+
 class ConsoleInterface:
     @staticmethod
     def get_params() -> Tuple[int, int, int] | None:
@@ -119,24 +127,32 @@ class ConsoleInterface:
                 print("Только 3 числа через пробел")
 
     @staticmethod
-    def get_command() -> List[str] | None:
+    def get_command() -> str | None:
         while True:
-            cmd = list(input("Введите одну из команд:'open x y', 'exit', 'show' \n").split())
-            if not cmd:
+            user_input = input("Введите одну из команд:'open x y', 'exit', 'show' \n").strip()
+            if not user_input:
                 continue
-            if cmd[0] == "exit":
-                return cmd
-            if cmd[0] == "show":
-                return cmd
-            if cmd[0] == "open":
-                try:
-                    x = int(cmd[1])
-                    y = int(cmd[2])
-                    return cmd
-                except ValueError:
-                    print("Нужно 2 числа")
-                    continue
-            print("Неккоректная команда)")
+
+            cmd = user_input.split()
+            cmd_name = cmd[0]
+
+            try:
+                command: CommandType = CommandType(cmd_name)
+            except ValueError:
+                print("Неккоректная команда")
+                continue
+
+            match command:
+                case CommandType.SHOW | CommandType.EXIT:
+                    return user_input
+                case CommandType.OPEN:
+                    try:
+                        x = int(cmd[1])
+                        y = int(cmd[2])
+                        return user_input
+                    except ValueError:
+                        print("После команды 'open' должны быть 2 числа")
+                        continue
 
     @staticmethod
     def show(game: GameField):
@@ -159,22 +175,20 @@ def main():
     game = GameField(n=height, m=width, mine_count=count)
 
     while not game.end:
-        ConsoleInterface.show(game)
         cmd = ConsoleInterface.get_command()
 
-        if cmd[0] == "exit":
-            print("Вы вышли")
-            break
-
-        if cmd[0] == "show":
-            ConsoleInterface.show(game)
-
-        if cmd[0] == "open":
-            x, y = map(int, cmd[1:])
-            if not game.open_cell(x - 1, y - 1):
-                print("БУМ!!!")
-                ConsoleInterface.show(game)
+        match cmd:
+            case cmd if re.fullmatch(r'^exit$', cmd):
+                print("Вы вышли")
                 break
+            case cmd if re.fullmatch(r'^show$', cmd):
+                ConsoleInterface.show(game)
+            case cmd if (m := re.fullmatch(r'^open\s+(\d+)\s+(\d+)$', cmd)):
+                x, y = map(int, m.groups())
+                if not game.open_cell(x - 1, y - 1):
+                    print("БУМ!!!")
+                    ConsoleInterface.show(game)
+                    break
 
         if game.end_game():
             print("Вы победили")
